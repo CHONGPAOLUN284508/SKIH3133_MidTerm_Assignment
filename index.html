@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Environmental Monitoring System</title>
+    <!-- Link to CSS for styling -->
+    <link rel="stylesheet" type="text/css" href="styles.css"> 
+    <!-- Include jQuery library -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> 
+    <!-- Include Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <script type="text/javascript">
+        $(document).ready(function() {
+            let sensorChart; // Declare a variable to hold the chart instance
+
+            // Function to fetch sensor data from the server
+            function fetchSensorData() { 
+                $.ajax({
+                    url: "fetch_data.php", // URL to the PHP script that fetches data from the database
+                    type: "GET", // HTTP GET request
+                    dataType: "json", // Expect JSON data in response
+                    success: function(data) { // Success callback function
+                        var tableContent = ""; // Initialize variable to hold table content
+                        var timestamps = []; // Arrays to hold data for the chart
+                        var temperatures = [];
+                        var humidities = [];
+                        var distances = [];
+
+                        // Reverse the data array and iterate over each row of data
+                        data.reverse().forEach(function(row) { 
+                            tableContent += "<tr>"; // Create a new table row
+                            tableContent += "<td>" + row.timestamp + "</td>"; // Add timestamp to row
+                            tableContent += "<td>" + row.temperature + " &deg;C</td>"; // Add temperature to row
+                            tableContent += "<td>" + row.humidity + " %</td>"; // Add humidity to row
+                            tableContent += "<td>" + row.distance + " cm</td>"; // Add distance to row
+                            tableContent += "</tr>";
+
+                            timestamps.push(row.timestamp); // Add timestamp to chart data array
+                            temperatures.push(row.temperature); // Add temperature to chart data array
+                            humidities.push(row.humidity); // Add humidity to chart data array
+                            distances.push(row.distance); // Add distance to chart data array
+                        });
+
+                        // Inject table content into the HTML
+                        $("#sensorTable tbody").html(tableContent); 
+
+                        // If a chart instance exists, destroy it to update with new data
+                        if (sensorChart) { 
+                            sensorChart.destroy();
+                        }
+
+                        // Get the canvas context for the chart
+                        var ctx = document.getElementById('sensorChart').getContext('2d'); 
+                        // Create a new chart instance
+                        sensorChart = new Chart(ctx, { 
+                            type: 'line', // Define the type of chart
+                            data: {
+                                labels: timestamps, // X-axis labels
+                                datasets: [
+                                    {
+                                        label: 'Temperature (\u00B0C)', // Temperature dataset
+                                        data: temperatures,
+                                        borderColor: 'rgba(255, 99, 132, 1)',
+                                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                        fill: false,
+                                    },
+                                    {
+                                        label: 'Humidity (%)', // Humidity dataset
+                                        data: humidities,
+                                        borderColor: 'rgba(54, 162, 235, 1)',
+                                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                        fill: false,
+                                    },
+                                    {
+                                        label: 'Distance (cm)', // Distance dataset
+                                        data: distances,
+                                        borderColor: 'rgba(75, 192, 192, 1)',
+                                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                        fill: false,
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true, // Make the chart responsive
+                                scales: {
+                                    x: {
+                                        display: true,
+                                        title: {
+                                            display: true,
+                                            text: 'Timestamp'
+                                        }
+                                    },
+                                    y: {
+                                        display: true,
+                                        title: {
+                                            display: true,
+                                            text: 'Distance Values'
+                                        },
+                                        suggestedMax: 2000, // Set the maximum value for the y-axis
+                                    }
+                                },
+                                elements: {
+                                    line: {
+                                        tension: 0.4, // Add line tension to make the line smooth
+                                    }
+                                },
+                                plugins: {
+                                    zoom: {
+                                        pan: {
+                                            enabled: true,
+                                            mode: 'x', // Enable panning on the x-axis
+                                        },
+                                        zoom: {
+                                            wheel: {
+                                                enabled: true, // Enable zooming with the mouse wheel
+                                            },
+                                            mode: 'x', // Enable zooming on the x-axis
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    },
+                    // Error callback function
+                    error: function(xhr, status, error) { 
+                        console.error("An error occurred while fetching data: ", error); // Log the error
+                    }
+                });
+            }
+
+            fetchSensorData(); // Initial fetch of sensor data
+            setInterval(fetchSensorData, 5000); // Fetch data every 5 seconds to update the table and chart
+            //Solution to Real-Time Data Updates Challenge
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Smart Environmental Monitoring System</h1> <!-- Title of the system -->
+        </header>
+        <div class="table-container">
+            <table id="sensorTable">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th> <!-- Table headers -->
+                        <th>Temperature</th>
+                        <th>Humidity</th>
+                        <th>Distance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        <div class="chart-container">
+            <canvas id="sensorChart"></canvas> <!-- Canvas element for the Chart.js chart -->
+        </div>
+    </div>
+</body>
+</html>
